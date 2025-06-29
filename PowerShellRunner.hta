@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PowerShell Command Runner</title>
+    <HTA:APPLICATION 
+        ID="PowerShellRunner"
+        APPLICATIONNAME="PowerShell Runner"
+        BORDER="thin"
+        BORDERSTYLE="normal"
+        CAPTION="yes"
+        ICON="powershell.exe"
+        SHOWINTASKBAR="yes"
+        SINGLEINSTANCE="yes"
+        WINDOWSTATE="normal"
+    />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 10px;
+            background-color: #f0f0f0;
+        }
+        #output {
+            background: black;
+            color: lime;
+            padding: 10px;
+            height: 300px;
+            overflow-y: scroll;
+            border: 1px solid #333;
+            font-family: Consolas, monospace;
+            white-space: pre-wrap;
+        }
+        #command {
+            width: 80%;
+            padding: 5px;
+            font-family: Consolas, monospace;
+        }
+        button {
+            padding: 5px 15px;
+            background: #0078d7;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #005fa3;
+        }
+    </style>
+</head>
+<body>
+    <h1>PowerShell Command Runner</h1>
+    <p>Enter a PowerShell command below:</p>
+    <input type="text" id="command" placeholder="Enter PowerShell command (e.g., Get-Process)" />
+    <button onclick="runPowerShell()">Run</button>
+    <button onclick="clearOutput()">Clear</button>
+    <div id="output"></div>
+
+    <script>
+        function runPowerShell() {
+            var command = document.getElementById("command").value;
+            if (!command) {
+                alert("Please enter a command!");
+                return;
+            }
+
+            var output = document.getElementById("output");
+            output.innerHTML += "> " + command + "\n";
+
+            // Use ActiveXObject to run PowerShell
+            var shell = new ActiveXObject("WScript.Shell");
+            var exec = shell.Exec("powershell.exe -Command " + command);
+
+            // Read output
+            var result = "";
+            while (!exec.StdOut.AtEndOfStream) {
+                result += exec.StdOut.ReadLine() + "\n";
+            }
+            while (!exec.StdErr.AtEndOfStream) {
+                result += "[ERROR] " + exec.StdErr.ReadLine() + "\n";
+            }
+
+            output.innerHTML += result + "\n";
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function clearOutput() {
+            document.getElementById("output").innerHTML = "";
+        }
+    </script>
+</body>
+</html>
